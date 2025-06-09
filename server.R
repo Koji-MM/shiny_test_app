@@ -8,6 +8,7 @@ library(shiny)
 source("SOfunction01.R")
 source("IBmatrix01.R")
 options(shiny.reactlog=TRUE)
+options(shiny.maxRequestSize = 10 * 1024^2)
 
 function(input, output,session) {
 　#諸条件の設定
@@ -55,6 +56,7 @@ function(input, output,session) {
   })
   #sim用のパラメータの準備と実行
   observeEvent(input$doSim,{
+    
    R <- input$R
    C <- input$C
    RC = R*C
@@ -84,11 +86,10 @@ function(input, output,session) {
       #12 シミュレーション結果の格納庫の作成
      results <- c()
      results = matrix(NA_integer_, nrow = NoS, ncol = 2+RC)
-      
       #13 シミュレーションの実行
       for( i in 1:NoS){
         results[i,] = one_sim( R, C, BT02 , DFFS, RPEM1, Cpool)
-      }
+        }
       #14 シミュレーション結果の格納
       results = as.data.frame(results)
       results$SimID <- (1:NoS)
@@ -97,8 +98,10 @@ function(input, output,session) {
       
       #15 結果をcsvに書き出し
       write.csv(results, file="Result.csv")
+      output$download_data01 = downloadHandler(filename="result.csv",
+                                               content=function(file){
+                                                 write.csv(results,file)}) #ダウンロードデータの作成
     }) 
-
 #出力された結果を再度読みこんで、結果を表示
   observeEvent(input$file2,{
     csv_file2 <- reactive(read.csv(input$file2$datapath))
@@ -108,7 +111,7 @@ function(input, output,session) {
      SOPlot <- D31[1,4:(3+((input$R)*(input$C)))]#最良のクローン構成を抽出
      SOPlot <- matrix(SOPlot,nrow=input$R) 
     output$SOPlot01 <- renderPrint({SOPlot})#配置を行列として出力
-    output$download_data01 = downloadHandler(filename="SOPlot.csv",
+    output$download_data02 = downloadHandler(filename="SOPlot.csv",
                                               content=function(file){
                                                 write.csv(SOPlot,file)}) #ダウンロードデータの作成
     output$SOPlot02 <- renderPrint({summary(factor(as.numeric(SOPlot)))})#各系統の使用回数
